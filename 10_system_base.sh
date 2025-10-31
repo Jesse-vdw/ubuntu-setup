@@ -36,7 +36,6 @@ WantedBy=timers.target
 EOF
 
 # Reload systemd to recognize new timer
-systemctl daemon-reexec
 systemctl daemon-reload
 systemctl enable --now unattended-upgrades-weekly.timer
 
