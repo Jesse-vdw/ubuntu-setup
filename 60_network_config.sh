@@ -21,8 +21,8 @@ load_wifi_env() {
       fi
       tmpfile=$(mktemp)
       printf '%s\n' "$decrypted" >"$tmpfile"
-      # shellcheck disable=SC1091
       set -a
+      # shellcheck disable=SC1090,SC1091
       source "$tmpfile"
       set +a
       rm -f "$tmpfile"
@@ -33,8 +33,8 @@ load_wifi_env() {
     fi
   elif [[ -f "$WIFI_ENV_FILE" ]]; then
     log "Loading Wi-Fi credentials from $WIFI_ENV_FILE"
-    # shellcheck disable=SC1091
     set -a
+    # shellcheck disable=SC1090,SC1091
     source "$WIFI_ENV_FILE"
     set +a
     return 0

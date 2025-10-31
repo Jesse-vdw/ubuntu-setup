@@ -8,12 +8,12 @@ DEFAULT_TARGET_USER="jesse"
 
 if [[ -n "${1:-}" ]]; then
   TARGET_USER="$1"
-elif [[ -n "${TARGET_USER:-}" ]]; then
-  TARGET_USER="$TARGET_USER"
-elif [[ -n "${SUDO_USER:-}" && "$SUDO_USER" != "root" ]]; then
-  TARGET_USER="$SUDO_USER"
-else
-  TARGET_USER="$DEFAULT_TARGET_USER"
+elif [[ -z "${TARGET_USER:-}" ]]; then
+  if [[ -n "${SUDO_USER:-}" && "$SUDO_USER" != "root" ]]; then
+    TARGET_USER="$SUDO_USER"
+  else
+    TARGET_USER="$DEFAULT_TARGET_USER"
+  fi
 fi
 
 if ! id -u "$TARGET_USER" >/dev/null 2>&1; then
@@ -154,10 +154,15 @@ TARGET_NVM_DIR="$TARGET_HOME/.nvm"
 if [[ ! -d "$TARGET_NVM_DIR" ]]; then
   run_as_target_user bash -c 'curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh | bash'
 fi
-run_as_target_user bash -lc 'export NVM_DIR="$HOME/.nvm"
-[[ -s "$NVM_DIR/nvm.sh" ]] && source "$NVM_DIR/nvm.sh"
-nvm install --lts
-nvm use --lts'
+# shellcheck disable=SC2016
+run_as_target_user bash -lc '
+  export NVM_DIR="$HOME/.nvm"
+  if [[ -s "$NVM_DIR/nvm.sh" ]]; then
+    source "$NVM_DIR/nvm.sh"
+  fi
+  nvm install --lts
+  nvm use --lts
+'
 
 # Install Python
 run_root apt-get install -y python3 python3-pip
