@@ -21,7 +21,28 @@ update-locale LANG="$LOCALE"
 
 # Install essential system tools
 apt-get update
-apt-get install -y ubuntu-drivers-common fwupd bleachbit stacer inxi
+apt-get install -y ubuntu-drivers-common fwupd bleachbit inxi
+
+# Install Stacer if it's not already present
+if ! command -v stacer >/dev/null 2>&1; then
+    log "Stacer not found. Preparing installation."
+
+    PPA_ADDED=0
+    if ! grep -Rq "^deb .*/oguzhaninan/stacer" /etc/apt/sources.list /etc/apt/sources.list.d 2>/dev/null; then
+        log "Adding official Stacer PPA"
+        add-apt-repository -y ppa:oguzhaninan/stacer
+        PPA_ADDED=1
+    fi
+
+    if [[ "$PPA_ADDED" -eq 1 ]]; then
+        log "Refreshing package lists after adding Stacer PPA"
+        apt-get update
+    fi
+
+    apt-get install -y stacer
+else
+    log "Stacer already installed. Skipping."
+fi
 
 # Set up weekly unattended upgrades (every Friday at 03:00)
 apt-get install -y unattended-upgrades
