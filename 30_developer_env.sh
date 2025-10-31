@@ -276,51 +276,56 @@ run_as_target_user gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/t
 run_as_target_user gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$PROFILE_SLUG/" highlight-foreground-color "'#1a1f2b'"
 log "Applied Qogir Material palette to GNOME Terminal profile $PROFILE_NAME"
 
-log "Ensuring VS Code Qogir Material theme resources are present..."
-VS_CODE_THEME_PATH="$TARGET_HOME/.vscode/extensions/qogir-material-theme/themes/QogirMaterial.json"
-VS_CODE_THEME_JSON=$(cat <<'EOF'
+log "Ensuring VS Code Qogir Material theme extension is present..."
+VS_CODE_EXTENSION_DIR="$TARGET_HOME/.vscode/extensions/local.qogir-material-1.0.0"
+VS_CODE_THEME_PATH="$VS_CODE_EXTENSION_DIR/themes/QogirMaterial.json"
+VS_CODE_PACKAGE_PATH="$VS_CODE_EXTENSION_DIR/package.json"
+VS_CODE_PACKAGE_JSON=$(cat <<'EOF'
 {
-  "$schema": "vscode://schemas/color-theme",
-  "name": "Qogir Material",
-  "type": "dark",
-  "colors": {
-    "editor.background": "#1A1F2B",
-    "editor.foreground": "#E6EDF3",
-    "editorCursor.foreground": "#5AB0F6",
-    "activityBar.background": "#1A2533",
-    "activityBar.foreground": "#E6EDF3",
-    "sideBar.background": "#1A2533",
-    "sideBar.foreground": "#E6EDF3",
-    "titleBar.activeBackground": "#1A1F2B",
-    "titleBar.activeForeground": "#E6EDF3",
-    "titleBar.inactiveBackground": "#1A1F2B",
-    "titleBar.inactiveForeground": "#94A3B8",
-    "tab.activeBackground": "#233044",
-    "tab.activeForeground": "#E6EDF3",
-    "tab.inactiveBackground": "#1A2533",
-    "tab.inactiveForeground": "#94A3B8",
-    "terminal.background": "#1A1F2B",
-    "terminal.foreground": "#E6EDF3",
-    "terminalCursor.background": "#1A1F2B",
-    "terminalCursor.foreground": "#5AB0F6",
-    "statusBar.background": "#1A1F2B",
-    "statusBar.foreground": "#E6EDF3",
-    "button.background": "#5AB0F6",
-    "button.foreground": "#1A1F2B",
-    "focusBorder": "#5AB0F6",
-    "list.activeSelectionBackground": "#5AB0F6",
-    "list.activeSelectionForeground": "#1A1F2B"
+  "name": "local.qogir-material",
+  "displayName": "Qogir Material",
+  "version": "1.0.0",
+  "publisher": "local",
+  "engines": {
+    "vscode": "^1.50.0"
   },
-  "tokenColors": []
+  "categories": [
+    "Themes"
+  ],
+  "contributes": {
+    "themes": [
+      {
+        "label": "Qogir Material",
+        "uiTheme": "vs-dark",
+        "path": "./themes/QogirMaterial.json"
+      }
+    ]
+  }
 }
 EOF
 )
+run_as_target_user mkdir -p "$VS_CODE_EXTENSION_DIR/themes"
+VS_CODE_THEME_SOURCE="$(dirname "$0")/themes/QogirMaterial.json"
+if [[ ! -f "$VS_CODE_THEME_SOURCE" ]]; then
+  error "Theme definition not found at $VS_CODE_THEME_SOURCE"
+  exit 1
+fi
+VS_CODE_THEME_JSON="$(cat "$VS_CODE_THEME_SOURCE")"
+VS_CODE_PACKAGE_STATUS=$(write_file_if_changed "$VS_CODE_PACKAGE_PATH" "$VS_CODE_PACKAGE_JSON")
+case "$VS_CODE_PACKAGE_STATUS" in
+  created) log "Created VS Code extension manifest at $VS_CODE_PACKAGE_PATH" ;;
+  updated) log "Updated VS Code extension manifest at $VS_CODE_PACKAGE_PATH" ;;
+  unchanged) log "VS Code extension manifest already up to date at $VS_CODE_PACKAGE_PATH" ;;
+esac
 VS_CODE_THEME_STATUS=$(write_file_if_changed "$VS_CODE_THEME_PATH" "$VS_CODE_THEME_JSON")
 case "$VS_CODE_THEME_STATUS" in
   created) log "Created VS Code theme file at $VS_CODE_THEME_PATH" ;;
   updated) log "Updated VS Code theme file at $VS_CODE_THEME_PATH" ;;
   unchanged) log "VS Code theme file already up to date at $VS_CODE_THEME_PATH" ;;
 esac
+if command -v code >/dev/null 2>&1; then
+  run_as_target_user code --install-extension "$VS_CODE_EXTENSION_DIR" || true
+fi
 
 log "Setting VS Code to use the Qogir Material theme..."
 run_as_target_user mkdir -p "$TARGET_HOME/.config/Code/User"
