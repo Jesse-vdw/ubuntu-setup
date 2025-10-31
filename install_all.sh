@@ -56,7 +56,7 @@ run_stage_as_target_user() {
 log "Starting full workstation setup (target user: $TARGET_USER)"
 
 run_stage "$SCRIPT_DIR/10_system_base.sh" "System base setup"
-run_stage_as_target_user "$SCRIPT_DIR/30_developer_env.sh" "Developer environment setup"
+run_stage "$SCRIPT_DIR/30_developer_env.sh" "Developer environment setup"
 run_stage "$SCRIPT_DIR/40_devops_stack.sh" "DevOps stack setup"
 run_stage "$SCRIPT_DIR/50_ai_tools.sh" "AI tooling setup"
 run_stage "$SCRIPT_DIR/60_network_config.sh" "Network configuration"
