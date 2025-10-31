@@ -5,7 +5,7 @@ This repository contains a collection of scripts that automate the provisioning 
 ## Highlights
 - `00_common.sh`: Shared helpers used by the other setup scripts.
 - `10_system_base.sh`: Prepares core system settings and unattended upgrades.
-- `30_developer_env.sh`: Installs the core developer toolchain. This script now elevates only the commands that require administrator privileges, so it can be invoked either as a regular user (with sudo available) or as root.
+- `30_developer_env.sh`: Installs the core developer toolchain. It auto-detects the intended desktop user (via `SUDO_USER`, a `TARGET_USER` variable, or a username argument) and applies user-specific settings for that account while elevating only the commands that need administrator privileges.
 - `50_ai_tools.sh`: Installs AI-oriented tooling such as Ollama, Docker, and Langflow.
 - `60_network_config.sh`: Configures NetworkManager and known Wi-Fi networks.
 
