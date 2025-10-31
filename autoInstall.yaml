@@ -1,0 +1,33 @@
+#cloud-config
+autoinstall:
+  version: 1
+  identity:
+    hostname: rnd-laptop01
+    username: jesse
+    password: "$6$rounds=4096$examplehash$k1I98exampleHashHere..."  # use `mkpasswd -m sha-512`
+  locale: en_US.UTF-8
+  keyboard:
+    layout: us
+  timezone: Europe/Amsterdam
+  ssh:
+    install-server: true
+  storage:
+    layout:
+      name: direct
+  packages:
+    - curl
+    - git
+    - unzip
+    - wget
+    - ca-certificates
+    - software-properties-common
+    - network-manager
+  late-commands:
+    # Mount installation media or clone repo
+    - curtin in-target --target=/target -- bash -c "mkdir -p /opt/setup && cd /opt/setup && git clone https://gitlab.company.local/it/ubuntu-setup.git"
+    # Ensure scripts are executable
+    - curtin in-target --target=/target -- bash -c "chmod +x /opt/setup/*.sh"
+    # Run master install script once
+    - curtin in-target --target=/target -- bash -c "cd /opt/setup && ./install_all.sh | tee /var/log/auto_install.log"
+    # Clean up apt cache to save space
+    - curtin in-target --target=/target -- apt-get clean
