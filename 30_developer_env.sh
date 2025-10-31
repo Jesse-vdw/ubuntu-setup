@@ -6,8 +6,17 @@ USER_EMAIL="jvw@bct.nl.com"
 
 log "=== DEVELOPER SETUP ==="
 
+run_root() {
+  if [[ $EUID -eq 0 ]]; then
+    "$@"
+  else
+    sudo "$@"
+  fi
+}
+
 # Install core tools
-apt-get update && apt-get install -y \
+run_root apt-get update
+run_root apt-get install -y \
   git curl wget build-essential software-properties-common \
   vim jq yq httpie htop gnupg lsb-release ca-certificates
 
@@ -26,9 +35,14 @@ fi
 
 # Install VSCode if not present
 if ! command -v code >/dev/null 2>&1; then
-  wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /usr/share/keyrings/ms_vscode.gpg
-  echo "deb [arch=$(dpkg --print-architecture)] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list
-  apt-get update && apt-get install -y code
+  KEY_FILE=$(mktemp)
+  curl -fsSL https://packages.microsoft.com/keys/microsoft.asc -o "$KEY_FILE"
+  run_root install -m 644 "$KEY_FILE" /usr/share/keyrings/ms_vscode.gpg
+  rm -f "$KEY_FILE"
+  printf 'deb [arch=%s] https://packages.microsoft.com/repos/code stable main\n' "$(dpkg --print-architecture)" \
+    | run_root tee /etc/apt/sources.list.d/vscode.list >/dev/null
+  run_root apt-get update
+  run_root apt-get install -y code
 fi
 
 # Install VSCode extensions
@@ -48,12 +62,12 @@ nvm install --lts
 nvm use --lts
 
 # Install Python
-apt-get install -y python3 python3-pip
+run_root apt-get install -y python3 python3-pip
 
 # Install Snap and DBeaver
 if ! command -v snap >/dev/null 2>&1; then
-  apt-get install -y snapd
+  run_root apt-get install -y snapd
 fi
-snap install dbeaver-ce
+run_root snap install dbeaver-ce
 
 log "Developer setup complete ✅"

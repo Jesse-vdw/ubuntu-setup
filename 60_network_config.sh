@@ -4,7 +4,8 @@ require_root
 
 log "=== NETWORK SETUP ==="
 
-apt install -y network-manager
+apt-get update
+apt-get install -y network-manager
 systemctl enable --now NetworkManager
 
 connect_wifi() {
