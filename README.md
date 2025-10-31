@@ -17,6 +17,19 @@ After completing the full installation (either by running `install_all.sh` or ex
 
 Run the scripts individually to target specific areas, or combine them in your own automation pipeline. Each script is safe to rerun; commands that would otherwise fail if a tool is already installed fall back gracefully.
 
+## Providing Wi-Fi credentials
+
+The Wi-Fi setup script reads network secrets from environment variables. For unattended runs, place the secrets in `/etc/ubuntu-setup/wifi.env` (owned by `root:root` and permissioned `600`). The file is sourced as a shell snippet, so define variables in `KEY=value` form:
+
+```bash
+HOME_WIFI_SSID="MyHomeSSID"
+HOME_WIFI_PASSWORD="SuperSecret"
+OFFICE_WIFI_SSID="CorpSSID"
+OFFICE_WIFI_PASSWORD="AnotherSecret"
+```
+
+At runtime, `60_network_config.sh` skips any network whose SSID or password is unset. Optionally, encrypt the secrets with GnuPG by storing them as `/etc/ubuntu-setup/wifi.env.gpg`; the script will decrypt the file (using `gpg --decrypt`) when NetworkManager is configured. You can also export the same variables in the environment before invoking the script to override the file-based values.
+
 ## Hardware and driver inspection
 
 Use the `check_system.sh` helper to capture a comprehensive hardware and driver report before or after provisioning. The script requires root privileges so it can query kernel logs and driver utilities.
