@@ -6,6 +6,7 @@ This repository contains a collection of scripts that automate the provisioning 
 - `00_common.sh`: Shared helpers used by the other setup scripts.
 - `10_system_base.sh`: Prepares core system settings and unattended upgrades.
 - `30_developer_env.sh`: Installs the core developer toolchain, applies the Qogir dark blue GNOME theme, and now provisions a reusable "Qogir Material" look-and-feel across GNOME Terminal, VS Code, and Brave. It auto-detects the intended desktop user (via `SUDO_USER`, a `TARGET_USER` variable, or a username argument) and applies user-specific settings for that account while elevating only the commands that need administrator privileges. The VS Code theme definition lives in `themes/QogirMaterial.json` and is packaged locally so it can be re-installed without marketplace access.
+- `30_developer_env.sh`: Installs the core developer toolchain, applies the Qogir dark blue GNOME theme, and now provisions a reusable "Qogir Material" look-and-feel across GNOME Terminal, VS Code, and Brave. It auto-detects the intended desktop user (via `SUDO_USER`, a `TARGET_USER` variable, or a username argument) and applies user-specific settings for that account while elevating only the commands that need administrator privileges. When Brave is available the script saves a custom theme manifest that can be loaded manually via **brave://extensions → Load unpacked**.
 - `40_devops_stack.sh`: Configures container tooling and supporting services for DevOps workflows.
 - `50_ai_tools.sh`: Installs AI-oriented tooling such as Ollama, Docker, and Langflow. Automatically ensures the target user is part of the `docker` group.
 - `60_network_config.sh`: Configures NetworkManager and known Wi-Fi networks.
@@ -16,6 +17,19 @@ This repository contains a collection of scripts that automate the provisioning 
 After completing the full installation (either by running `install_all.sh` or executing the scripts individually), log out and back in—or run `newgrp docker`—so the refreshed docker group membership takes effect.
 
 Run the scripts individually to target specific areas, or combine them in your own automation pipeline. Each script is safe to rerun; commands that would otherwise fail if a tool is already installed fall back gracefully.
+
+## Providing Wi-Fi credentials
+
+The Wi-Fi setup script reads network secrets from environment variables. For unattended runs, place the secrets in `/etc/ubuntu-setup/wifi.env` (owned by `root:root` and permissioned `600`). The file is sourced as a shell snippet, so define variables in `KEY=value` form:
+
+```bash
+HOME_WIFI_SSID="MyHomeSSID"
+HOME_WIFI_PASSWORD="SuperSecret"
+OFFICE_WIFI_SSID="CorpSSID"
+OFFICE_WIFI_PASSWORD="AnotherSecret"
+```
+
+At runtime, `60_network_config.sh` skips any network whose SSID or password is unset. Optionally, encrypt the secrets with GnuPG by storing them as `/etc/ubuntu-setup/wifi.env.gpg`; the script will decrypt the file (using `gpg --decrypt`) when NetworkManager is configured. You can also export the same variables in the environment before invoking the script to override the file-based values.
 
 ## Hardware and driver inspection
 

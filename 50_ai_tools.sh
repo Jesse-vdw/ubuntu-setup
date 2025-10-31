@@ -7,7 +7,23 @@ TARGET_USER=${TARGET_USER:-$(logname 2>/dev/null || echo "jesse")}
 log "Using target user '$TARGET_USER' for Docker access"
 log "=== AI TOOLS SETUP ==="
 
-curl -fsSL https://ollama.ai/install.sh | sh || warn "Ollama installation skipped."
+OLLAMA_INSTALLER_URL="https://ollama.ai/install.sh"
+OLLAMA_INSTALLER_TMP="$(mktemp)"
+
+cleanup_installer() {
+  rm -f "$OLLAMA_INSTALLER_TMP"
+}
+trap cleanup_installer EXIT
+
+if ! curl -fsSL -o "$OLLAMA_INSTALLER_TMP" "$OLLAMA_INSTALLER_URL"; then
+  error "Failed to download Ollama installer."
+  exit 1
+fi
+
+if ! bash "$OLLAMA_INSTALLER_TMP"; then
+  error "Ollama installer failed. Aborting stage."
+  exit 1
+fi
 
 apt-get update
 apt-get install -y docker.io docker-compose-plugin

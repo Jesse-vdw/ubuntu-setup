@@ -160,6 +160,19 @@ if ! command -v snap >/dev/null 2>&1; then
 fi
 run_root snap install dbeaver-ce
 
+# Install Brave browser (official repository)
+if ! command -v brave-browser >/dev/null 2>&1; then
+  log "Adding Brave browser APT repository and installing brave-browser"
+  KEY_PATH="/usr/share/keyrings/brave-browser-archive-keyring.gpg"
+  run_root curl -fsSLo "$KEY_PATH" https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg
+  printf 'deb [arch=%s signed-by=%s] https://brave-browser-apt-release.s3.brave.com/ stable main\n' \
+    "$(dpkg --print-architecture)" "$KEY_PATH" | run_root tee /etc/apt/sources.list.d/brave-browser-release.list >/dev/null
+  run_root apt-get update
+  run_root apt-get install -y brave-browser
+else
+  log "Brave browser already installed; skipping repository setup"
+fi
+
 log "Preparing GNOME Qogir dark blue theme installation..."
 
 run_as_target_user mkdir -p "$TARGET_HOME/.themes" "$TARGET_HOME/.icons" "$TARGET_HOME/.cache"
@@ -361,9 +374,10 @@ else
   log "VS Code theme preference already set to $PROFILE_NAME"
 fi
 
-log "Preparing Brave browser Qogir Material theme manifest..."
-BRAVE_THEME_PATH="$TARGET_HOME/.config/BraveSoftware/Brave-Browser/CustomThemes/qogir_material_theme/manifest.json"
-BRAVE_THEME_JSON=$(cat <<'EOF'
+if command -v brave-browser >/dev/null 2>&1; then
+  log "Preparing Brave browser Qogir Material theme manifest..."
+  BRAVE_THEME_PATH="$TARGET_HOME/.config/BraveSoftware/Brave-Browser/CustomThemes/qogir_material_theme/manifest.json"
+  BRAVE_THEME_JSON=$(cat <<'EOF'
 {
   "manifest_version": 3,
   "version": "1.0.0",
@@ -381,14 +395,17 @@ BRAVE_THEME_JSON=$(cat <<'EOF'
   }
 }
 EOF
-)
-BRAVE_THEME_STATUS=$(write_file_if_changed "$BRAVE_THEME_PATH" "$BRAVE_THEME_JSON")
-case "$BRAVE_THEME_STATUS" in
-  created) log "Created Brave theme manifest at $BRAVE_THEME_PATH" ;;
-  updated) log "Updated Brave theme manifest at $BRAVE_THEME_PATH" ;;
-  unchanged) log "Brave theme manifest already up to date at $BRAVE_THEME_PATH" ;;
-esac
+  )
+  BRAVE_THEME_STATUS=$(write_file_if_changed "$BRAVE_THEME_PATH" "$BRAVE_THEME_JSON")
+  case "$BRAVE_THEME_STATUS" in
+    created) log "Created Brave theme manifest at $BRAVE_THEME_PATH" ;;
+    updated) log "Updated Brave theme manifest at $BRAVE_THEME_PATH" ;;
+    unchanged) log "Brave theme manifest already up to date at $BRAVE_THEME_PATH" ;;
+  esac
 
-log "To finish applying the Brave theme, load the unpacked theme from $BRAVE_THEME_PATH via brave://extensions"
+  log "To finish applying the Brave theme, load the unpacked theme from $BRAVE_THEME_PATH via brave://extensions"
+else
+  log "Brave browser not detected; skipping custom theme manifest setup"
+fi
 
 log "Developer setup complete ✅"
