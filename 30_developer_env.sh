@@ -37,7 +37,8 @@ fi
 if ! command -v code >/dev/null 2>&1; then
   KEY_FILE=$(mktemp)
   curl -fsSL https://packages.microsoft.com/keys/microsoft.asc -o "$KEY_FILE"
-  run_root install -m 644 "$KEY_FILE" /usr/share/keyrings/ms_vscode.gpg
+  run_root gpg --dearmor --yes --output /usr/share/keyrings/ms_vscode.gpg "$KEY_FILE"
+  run_root chmod 644 /usr/share/keyrings/ms_vscode.gpg
   rm -f "$KEY_FILE"
   printf 'deb [arch=%s] https://packages.microsoft.com/repos/code stable main\n' "$(dpkg --print-architecture)" \
     | run_root tee /etc/apt/sources.list.d/vscode.list >/dev/null
