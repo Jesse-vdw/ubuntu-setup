@@ -185,6 +185,11 @@ log "Preparing GNOME Qogir dark blue theme installation..."
 
 run_as_target_user mkdir -p "$TARGET_HOME/.themes" "$TARGET_HOME/.icons" "$TARGET_HOME/.cache"
 
+# Ensure theme build dependencies are present before cloning/installing the repositories.
+# The Qogir installers compile assets with sassc/libglib2.0-dev-bin and rely on GTK2 engines
+# (including the Murrine engine) to render the widgets correctly once installed.
+run_root apt-get install -y sassc libglib2.0-dev-bin gtk2-engines gtk2-engines-murrine
+
 QOGIR_THEME_REPO="https://github.com/vinceliuice/Qogir-theme"
 QOGIR_THEME_DIR="$TARGET_HOME/.cache/Qogir-theme"
 
