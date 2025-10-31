@@ -41,19 +41,27 @@ run_as_target_user() {
   fi
 }
 
-run_root() {
-  if [[ $EUID -eq 0 ]]; then
-    "$@"
-  else
-    sudo "$@"
-  fi
-}
-
 run_as_target_user_capture() {
   if [[ $EUID -eq 0 ]]; then
     sudo -u "$TARGET_USER" HOME="$TARGET_HOME" "$@"
   else
     HOME="$TARGET_HOME" "$@"
+  fi
+}
+
+run_gsettings() {
+  run_as_target_user dbus-run-session -- gsettings "$@"
+}
+
+run_gsettings_capture() {
+  run_as_target_user_capture dbus-run-session -- gsettings "$@"
+}
+
+run_root() {
+  if [[ $EUID -eq 0 ]]; then
+    "$@"
+  else
+    sudo "$@"
   fi
 }
 
@@ -89,7 +97,7 @@ write_file_if_changed() {
 run_root apt-get update
 run_root apt-get install -y \
   git curl wget build-essential software-properties-common \
-  vim jq yq httpie htop gnupg lsb-release ca-certificates
+  vim jq yq httpie htop gnupg lsb-release ca-certificates dbus-x11
 
 ensure_tool_installed() {
   local package_name="$1"
@@ -197,8 +205,8 @@ else
 fi
 
 log "Applying Qogir theme settings for $TARGET_USER"
-run_as_target_user gsettings set org.gnome.desktop.interface gtk-theme "Qogir-Dark"
-run_as_target_user gsettings set org.gnome.desktop.interface icon-theme "Qogir"
+run_gsettings set org.gnome.desktop.interface gtk-theme "Qogir-Dark"
+run_gsettings set org.gnome.desktop.interface icon-theme "Qogir"
 
 log "Qogir dark blue theme installation complete ✅"
 
@@ -237,7 +245,7 @@ PROFILE_SLUG="${PROFILE_SLUG//$'\n'/}"
 if [[ -z "$PROFILE_SLUG" ]]; then
   PROFILE_SLUG="$(uuidgen)"
   log "Creating new GNOME Terminal profile with UUID $PROFILE_SLUG"
-  PROFILE_LIST_RAW=$(run_as_target_user gsettings get org.gnome.Terminal.ProfilesList list || echo "[]")
+  PROFILE_LIST_RAW=$(run_gsettings_capture get org.gnome.Terminal.ProfilesList list || echo "[]")
   PROFILE_LIST_UPDATED=$(PROFILE_SLUG="$PROFILE_SLUG" PROFILE_LIST_RAW="$PROFILE_LIST_RAW" python3 - <<'PY'
 import ast
 import os
@@ -253,27 +261,27 @@ if slug not in items:
 print('[' + ', '.join(f"'{item}'" for item in items) + ']')
 PY
 )
-  run_as_target_user gsettings set org.gnome.Terminal.ProfilesList list "$PROFILE_LIST_UPDATED"
+  run_gsettings set org.gnome.Terminal.ProfilesList list "$PROFILE_LIST_UPDATED"
 else
   log "Found existing GNOME Terminal profile UUID $PROFILE_SLUG"
 fi
 
-run_as_target_user gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$PROFILE_SLUG/" visible-name "$PROFILE_NAME"
-run_as_target_user gsettings set org.gnome.Terminal.ProfilesList default "'$PROFILE_SLUG'"
+run_gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$PROFILE_SLUG/" visible-name "$PROFILE_NAME"
+run_gsettings set org.gnome.Terminal.ProfilesList default "'$PROFILE_SLUG'"
 
 QOGIR_TERMINAL_PALETTE="['#1a1f2b', '#ff6f61', '#5cc995', '#f0c674', '#5ab0f6', '#c991e1', '#4cc6d3', '#e6edf3', '#233044', '#ff8a80', '#7adba8', '#ffe08a', '#7fc8ff', '#f2b0ff', '#8ce6f2', '#f8fafc']"
-run_as_target_user gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$PROFILE_SLUG/" use-theme-colors false
-run_as_target_user gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$PROFILE_SLUG/" background-color "'#1a1f2b'"
-run_as_target_user gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$PROFILE_SLUG/" foreground-color "'#e6edf3'"
-run_as_target_user gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$PROFILE_SLUG/" bold-color-same-as-fg false
-run_as_target_user gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$PROFILE_SLUG/" bold-color "'#f8fafc'"
-run_as_target_user gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$PROFILE_SLUG/" palette "$QOGIR_TERMINAL_PALETTE"
-run_as_target_user gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$PROFILE_SLUG/" cursor-colors-set true
-run_as_target_user gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$PROFILE_SLUG/" cursor-background-color "'#5ab0f6'"
-run_as_target_user gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$PROFILE_SLUG/" cursor-foreground-color "'#1a1f2b'"
-run_as_target_user gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$PROFILE_SLUG/" highlight-colors-set true
-run_as_target_user gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$PROFILE_SLUG/" highlight-background-color "'#5ab0f6'"
-run_as_target_user gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$PROFILE_SLUG/" highlight-foreground-color "'#1a1f2b'"
+run_gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$PROFILE_SLUG/" use-theme-colors false
+run_gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$PROFILE_SLUG/" background-color "'#1a1f2b'"
+run_gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$PROFILE_SLUG/" foreground-color "'#e6edf3'"
+run_gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$PROFILE_SLUG/" bold-color-same-as-fg false
+run_gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$PROFILE_SLUG/" bold-color "'#f8fafc'"
+run_gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$PROFILE_SLUG/" palette "$QOGIR_TERMINAL_PALETTE"
+run_gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$PROFILE_SLUG/" cursor-colors-set true
+run_gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$PROFILE_SLUG/" cursor-background-color "'#5ab0f6'"
+run_gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$PROFILE_SLUG/" cursor-foreground-color "'#1a1f2b'"
+run_gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$PROFILE_SLUG/" highlight-colors-set true
+run_gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$PROFILE_SLUG/" highlight-background-color "'#5ab0f6'"
+run_gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$PROFILE_SLUG/" highlight-foreground-color "'#1a1f2b'"
 log "Applied Qogir Material palette to GNOME Terminal profile $PROFILE_NAME"
 
 log "Ensuring VS Code Qogir Material theme resources are present..."
