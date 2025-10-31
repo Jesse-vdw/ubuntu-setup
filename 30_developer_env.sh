@@ -55,6 +55,19 @@ run_root apt-get install -y \
   git curl wget build-essential software-properties-common \
   vim jq yq httpie htop gnupg lsb-release ca-certificates
 
+ensure_tool_installed() {
+  local package_name="$1"
+  if ! dpkg -s "$package_name" >/dev/null 2>&1; then
+    log "Installing missing package: $package_name"
+    run_root apt-get install -y "$package_name"
+  else
+    log "Package already installed: $package_name"
+  fi
+}
+
+ensure_tool_installed git
+ensure_tool_installed gnome-tweaks
+
 # Configure Git (per target user)
 run_as_target_user git config --global user.name "$USER_NAME"
 run_as_target_user git config --global user.email "$USER_EMAIL"
@@ -110,5 +123,47 @@ if ! command -v snap >/dev/null 2>&1; then
   run_root apt-get install -y snapd
 fi
 run_root snap install dbeaver-ce
+
+log "Preparing GNOME Qogir dark blue theme installation..."
+
+run_as_target_user mkdir -p "$TARGET_HOME/.themes" "$TARGET_HOME/.icons" "$TARGET_HOME/.cache"
+
+QOGIR_THEME_REPO="https://github.com/vinceliuice/Qogir-theme"
+QOGIR_THEME_DIR="$TARGET_HOME/.cache/Qogir-theme"
+
+if [[ -d "$QOGIR_THEME_DIR/.git" ]]; then
+  log "Updating existing Qogir theme repository at $QOGIR_THEME_DIR"
+  run_as_target_user git -C "$QOGIR_THEME_DIR" pull --ff-only
+else
+  log "Cloning Qogir theme repository to $QOGIR_THEME_DIR"
+  run_as_target_user git clone "$QOGIR_THEME_REPO" "$QOGIR_THEME_DIR"
+fi
+
+log "Installing Qogir GTK theme (dark blue variant)"
+run_as_target_user bash -lc "cd '$QOGIR_THEME_DIR' && ./install.sh --theme dark --color blue -d '$TARGET_HOME/.themes'"
+
+QOGIR_ICON_REPO="https://github.com/vinceliuice/Qogir-icon-theme"
+QOGIR_ICON_DIR="$TARGET_HOME/.cache/Qogir-icon-theme"
+QOGIR_ICON_TARGET="$TARGET_HOME/.icons/Qogir"
+
+if [[ ! -d "$QOGIR_ICON_TARGET" ]]; then
+  if [[ -d "$QOGIR_ICON_DIR/.git" ]]; then
+    log "Updating existing Qogir icon theme repository at $QOGIR_ICON_DIR"
+    run_as_target_user git -C "$QOGIR_ICON_DIR" pull --ff-only
+  else
+    log "Cloning Qogir icon theme repository to $QOGIR_ICON_DIR"
+    run_as_target_user git clone "$QOGIR_ICON_REPO" "$QOGIR_ICON_DIR"
+  fi
+  log "Installing Qogir icon theme"
+  run_as_target_user bash -lc "cd '$QOGIR_ICON_DIR' && ./install.sh -d '$TARGET_HOME/.icons'"
+else
+  log "Qogir icon theme already installed at $QOGIR_ICON_TARGET; skipping reinstall"
+fi
+
+log "Applying Qogir theme settings for $TARGET_USER"
+run_as_target_user gsettings set org.gnome.desktop.interface gtk-theme "Qogir-Dark"
+run_as_target_user gsettings set org.gnome.desktop.interface icon-theme "Qogir"
+
+log "Qogir dark blue theme installation complete ✅"
 
 log "Developer setup complete ✅"
