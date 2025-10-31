@@ -17,6 +17,17 @@ After completing the full installation (either by running `install_all.sh` or ex
 
 Run the scripts individually to target specific areas, or combine them in your own automation pipeline. Each script is safe to rerun; commands that would otherwise fail if a tool is already installed fall back gracefully.
 
+## Hardware and driver inspection
+
+Use the `check_system.sh` helper to capture a comprehensive hardware and driver report before or after provisioning. The script requires root privileges so it can query kernel logs and driver utilities.
+
+```bash
+chmod +x check_system.sh
+sudo ./check_system.sh | tee driver_check_report.txt
+```
+
+> **Optional packages:** Install `mesa-utils`, `v4l-utils`, `inxi`, and GPU vendor diagnostics (`nvidia-utils-*`, `radeontop`, `intel-gpu-tools`) to enable all sections of the report.
+
 ## Full installation runner
 
 To execute the entire setup in one pass, run the orchestrator script as root:
